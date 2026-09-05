@@ -70,9 +70,17 @@ marketplace root it only reaches the manifests, so the per-plugin run is what ac
 `SKILL.md` frontmatter. CI pins the Claude Code version (`CLAUDE_CODE_VERSION` in the workflow)
 so an upstream release cannot redden an untouched repo; bump it deliberately.
 
+## Also in this repo
+
+`tools/composer-maestro/` — standalone CLI dependency-stack architects for Android, KMP, iOS,
+Web and Flutter. They resolve live versions from each platform's registry and emit
+`package.json`, `pubspec.yaml`, `Package.swift`, `build.gradle.kts` or a version catalog. Not
+plugins and not installed by `/plugin`; see `tools/composer-maestro/README.md`.
+
 ## Layout
 
 ```
+tools/composer-maestro/             # standalone CLIs, not part of the marketplace
 .claude-plugin/marketplace.json     # marketplace manifest
 plugins/modern-nav-motion/
   .claude-plugin/plugin.json        # plugin manifest
