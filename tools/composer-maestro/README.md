@@ -36,12 +36,25 @@ python3 composer_flutter.py --app food --offline      # curated versions, no net
 
 Every composer takes `--app`, `--agent-manifest`, `--offline`, and `-o FILE`.
 
+**Banners and progress go to stderr; generated output goes to stdout.** So the manifest pipes
+cleanly without `-o`:
+
+```bash
+python3 composer_kmp.py --app food --agent-manifest | jq '.resolved_at_versions'
+python3 composer_web.py --app food --pkg > package.json
+```
+
+Emoji in the preset names are written through a UTF-8 reconfigured stdout and a UTF-8 file
+handle, so the tools work with `LANG` unset, `PYTHONIOENCODING=ascii`, or a legacy Windows
+console.
+
 ## How resolution works
 
 1. Ask the platform's registry for the newest version.
 2. Rank candidates by **parsed integer components**, so `1.10.0` beats `1.9.0` — string sorting
    gets this backwards, which is how stacks quietly regress a minor version.
-3. Skip prereleases (`alpha`/`beta`/`rc`/`dev`/`snapshot`) unless nothing else exists.
+3. Skip prereleases (`alpha`/`beta`/`rc`/`dev`/`snapshot`) — matched only at a separator, so a
+   version like `1.0.0-devon` is not mistaken for a dev build and silently dropped.
 4. On failure, fall back to a curated `STABLE_DEFAULTS` pin — and **label it** in the output as
    `[Curated Stable]` with a count, rather than passing it off as resolved.
 
@@ -50,9 +63,13 @@ never lies about where a number came from.
 
 ## Platform notes
 
-- **iOS** reads git tags, because that is where SPM actually resolves versions from — not a
-  package registry. Unauthenticated GitHub allows ~60 requests/hour; set `GITHUB_TOKEN` to raise
-  it. SwiftLint is emitted as a build-tool plugin, not a linkable product.
+- **iOS** resolves from GitHub, because that is where SPM reads versions from — not a package
+  registry. It asks `/releases/latest` first and only falls back to scanning tags, since GitHub
+  returns tags in git order rather than version order: on a heavily-tagged repo the newest
+  release sits outside the first page and a tag scan reports a confidently wrong version. A
+  fallback result is labelled `GitHub (tag scan)` so you can tell the two apart. Unauthenticated
+  GitHub allows ~60 requests/hour; set `GITHUB_TOKEN` to raise it. SwiftLint is emitted as a
+  build-tool plugin, not a linkable product.
 - **KMP** places each dependency in an explicit source set — `ktor-client-okhttp` in
   `androidMain`, `ktor-client-darwin` in `iosMain`. A JVM-only artifact in `commonMain` fails to
   resolve for the iOS target with an error that does not tell you that is the cause. Plugin

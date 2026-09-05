@@ -24,7 +24,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from composer_core import (C, Resolver, build_parser, generate_agent_manifest, get_json,
+from composer_core import (C, Resolver, log, build_parser, generate_agent_manifest, get_json,
                            http_get, latest_stable, print_header, print_quick_actions,
                            print_stack, write_out)
 
@@ -125,32 +125,38 @@ STABLE_DEFAULTS = {
 }
 
 
-def resolve_github_tag(repo):
-    """SPM resolves versions from git tags, so that is what we read."""
+def _gh_headers():
+    headers = {"Accept": "application/vnd.github+json"}
     token = os.getenv("GITHUB_TOKEN")
-    url = f"https://api.github.com/repos/{repo}/tags?per_page=100"
     if token:
-        import urllib.request
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "Composer-Maestro/1.0",
-                          "Authorization": f"Bearer {token}",
-                          "Accept": "application/vnd.github+json"})
-        try:
-            import json as _json
-            with urllib.request.urlopen(req, timeout=6) as resp:
-                data = _json.loads(resp.read().decode("utf-8", "ignore"))
-        except Exception:
-            data = None
-    else:
-        data = get_json(url)
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
 
+
+def resolve_github_tag(repo):
+    """SPM resolves from git tags, so that is what we read.
+
+    /releases/latest first: it is one request and it is the repo's own answer. The tag scan
+    is the fallback, and it is only a fallback because GitHub returns tags in git order, not
+    version order — on a heavily-tagged repo the newest release can sit outside the first
+    page, which would produce a confidently wrong version labelled as resolved.
+    """
+    headers = _gh_headers()
+
+    release = get_json(f"https://api.github.com/repos/{repo}/releases/latest", headers=headers)
+    if isinstance(release, dict):
+        tag = (release.get("tag_name") or "").lstrip("v")
+        if tag and tag[0].isdigit() and "." in tag:
+            return tag, "GitHub"
+
+    data = get_json(f"https://api.github.com/repos/{repo}/tags?per_page=100", headers=headers)
     if not isinstance(data, list) or not data:
         return None, None
     names = [t.get("name", "").lstrip("v") for t in data if t.get("name")]
-    # Keep semver-shaped tags only; repos also tag things like "swift-5" or "old-api".
+    # Semver-shaped tags only; repos also tag things like "swift-5" or "old-api".
     names = [n for n in names if n and n[0].isdigit() and "." in n]
     picked = latest_stable(names)
-    return (picked, "GitHub") if picked else (None, None)
+    return (picked, "GitHub (tag scan)") if picked else (None, None)
 
 
 def generate_package_swift(app_key, app_data, resolved):
@@ -244,13 +250,13 @@ def main():
     print_header("🎼 COMPOSER iOS MAESTRO (v1.0)", app_data)
 
     if args.offline:
-        print(f"{C['GRAY']}📴 Offline mode — using curated stable versions.{C['RESET']}")
+        log(f"{C['GRAY']}📴 Offline mode — using curated stable versions.{C['RESET']}")
         resolver = Resolver(lambda pkg: (None, None), STABLE_DEFAULTS)
     else:
         if not os.getenv("GITHUB_TOKEN"):
-            print(f"{C['GRAY']}💡 No GITHUB_TOKEN set — GitHub allows ~60 requests/hour "
-                  f"unauthenticated.{C['RESET']}")
-        print(f"{C['GRAY']}📡 Reading release tags from GitHub...{C['RESET']}")
+            log(f"{C['GRAY']}💡 No GITHUB_TOKEN set — GitHub allows ~60 requests/hour "
+                f"unauthenticated.{C['RESET']}")
+        log(f"{C['GRAY']}📡 Reading release tags from GitHub...{C['RESET']}")
         resolver = Resolver(resolve_github_tag, STABLE_DEFAULTS, workers=6)
     resolved = resolver.resolve_all(app_data["modules"])
 
@@ -261,7 +267,7 @@ def main():
     elif args.agent_manifest:
         write_out(generate_agent_manifest("ios", args.app, app_data, resolved), args.out)
     else:
-        print("")
+        log("")
         print_stack(app_data["modules"], resolved)
         print_quick_actions(PROG, args.app, [
             ("package", "Generate Package.swift"),

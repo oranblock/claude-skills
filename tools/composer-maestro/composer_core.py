@@ -22,7 +22,7 @@ import urllib.parse
 import urllib.request
 
 __all__ = [
-    "C", "http_get", "get_json", "latest_stable", "Resolver",
+    "C", "log", "http_get", "get_json", "latest_stable", "Resolver",
     "build_parser", "print_header", "print_stack", "print_quick_actions",
     "generate_agent_manifest", "write_out",
 ]
@@ -40,16 +40,32 @@ C = {
 if not sys.stdout.isatty() or os.getenv("NO_COLOR"):
     C = {k: '' for k in C}
 
+# Preset names carry emoji. Under a non-UTF-8 stdout — LANG unset in Docker, an ASCII
+# PYTHONIOENCODING, a legacy Windows console — printing them raises UnicodeEncodeError
+# before any real work happens. Degrade the character rather than kill the run.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
+
 USER_AGENT = "Composer-Maestro/1.0"
+
+
+def log(*args):
+    """Progress and banners go to stderr, so stdout stays a clean artifact you can pipe."""
+    print(*args, file=sys.stderr)
 
 # --- HTTP ---------------------------------------------------------------------
 
-def http_get(url, timeout=6, accept=None):
+def http_get(url, timeout=6, accept=None, headers=None):
     """Return (status, body). Never raises — a dead registry falls back to curated."""
-    headers = {"User-Agent": USER_AGENT}
+    merged = {"User-Agent": USER_AGENT}
     if accept:
-        headers["Accept"] = accept
-    req = urllib.request.Request(url, headers=headers)
+        merged["Accept"] = accept
+    if headers:
+        merged.update(headers)
+    req = urllib.request.Request(url, headers=merged)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status, resp.read().decode('utf-8', errors='ignore')
@@ -59,8 +75,8 @@ def http_get(url, timeout=6, accept=None):
         return 0, ""
 
 
-def get_json(url, timeout=6):
-    status, body = http_get(url, timeout, accept="application/json")
+def get_json(url, timeout=6, headers=None):
+    status, body = http_get(url, timeout, accept="application/json", headers=headers)
     if status == 200 and body:
         try:
             return json.loads(body)
@@ -69,7 +85,10 @@ def get_json(url, timeout=6):
     return None
 
 
-PRERELEASE = re.compile(r'(alpha|beta|rc|dev|snapshot|preview|nightly|[-+]pre)', re.I)
+# Anchored to a separator on purpose: unanchored, "rc" and "dev" match inside ordinary
+# words, so versions get silently reclassified as prereleases and dropped.
+PRERELEASE = re.compile(
+    r'(?:^|[-+._])(alpha|beta|rc|dev|snapshot|preview|nightly|pre)(?:[-+._\d]|$)', re.I)
 
 
 def _version_key(v):
@@ -152,20 +171,20 @@ def build_parser(prog, description, catalogs, formats):
 
 def print_header(title, app_data):
     bar = f"{C['B_CYAN']}============================================================={C['RESET']}"
-    print(bar)
-    print(f"{C['B_CYAN']} {title} {C['RESET']}")
-    print(bar)
-    print(f" 🎯 Active App Preset: {C['B_YELLOW']}{app_data['name']}{C['RESET']}")
-    print(f" 📖 Description      : {C['GRAY']}{app_data['description']}{C['RESET']}\n")
+    log(bar)
+    log(f"{C['B_CYAN']} {title} {C['RESET']}")
+    log(bar)
+    log(f" 🎯 Active App Preset: {C['B_YELLOW']}{app_data['name']}{C['RESET']}")
+    log(f" 📖 Description      : {C['GRAY']}{app_data['description']}{C['RESET']}\n")
 
 
 def print_stack(catalog_modules, resolved):
     fallbacks = sum(1 for r in resolved.values() if r['repo'] in ("Curated Stable", "UNRESOLVED"))
     if fallbacks:
-        print(f"{C['B_YELLOW']}⚠  {fallbacks} package(s) fell back to curated versions "
-              f"(registry unreachable or unknown package).{C['RESET']}\n")
+        log(f"{C['B_YELLOW']}⚠  {fallbacks} package(s) fell back to curated versions "
+            f"(registry unreachable or unknown package).{C['RESET']}\n")
     else:
-        print(f"{C['B_GREEN']}✅ All versions resolved from live registries!{C['RESET']}\n")
+        log(f"{C['B_GREEN']}✅ All versions resolved from live registries!{C['RESET']}\n")
 
     width = max((len(p) for p in resolved), default=30)
     width = min(max(width, 24), 52)
@@ -180,6 +199,8 @@ def print_stack(catalog_modules, resolved):
 
 
 def print_quick_actions(prog, app, actions):
+    if not actions:
+        return
     print(f"{C['B_CYAN']}💡 Quick Actions for this App:{C['RESET']}")
     pad = max(len(flag) for flag, _ in actions)
     for flag, label in actions:
@@ -204,8 +225,8 @@ def generate_agent_manifest(platform, app_key, app_data, resolved):
 
 def write_out(text, path=None):
     if path:
-        with open(path, 'w') as fh:
+        with open(path, 'w', encoding='utf-8') as fh:
             fh.write(text if text.endswith("\n") else text + "\n")
-        print(f"{C['B_GREEN']}✅ Wrote {path}{C['RESET']}")
+        log(f"{C['B_GREEN']}✅ Wrote {path}{C['RESET']}")
     else:
         print(text)

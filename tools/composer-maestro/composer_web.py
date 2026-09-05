@@ -18,7 +18,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from composer_core import (C, Resolver, build_parser, generate_agent_manifest, get_json,
+from composer_core import (C, Resolver, log, build_parser, generate_agent_manifest, get_json,
                            latest_stable, print_header, print_quick_actions, print_stack,
                            write_out)
 
@@ -189,10 +189,10 @@ def main():
     print_header("🎼 COMPOSER WEB MAESTRO (v1.0)", app_data)
 
     if args.offline:
-        print(f"{C['GRAY']}📴 Offline mode — using curated stable versions.{C['RESET']}")
+        log(f"{C['GRAY']}📴 Offline mode — using curated stable versions.{C['RESET']}")
         resolver = Resolver(lambda pkg: (None, None), STABLE_DEFAULTS)
     else:
-        print(f"{C['GRAY']}📡 Contacting the npm registry for live versions...{C['RESET']}")
+        log(f"{C['GRAY']}📡 Contacting the npm registry for live versions...{C['RESET']}")
         resolver = Resolver(resolve_npm, STABLE_DEFAULTS)
     resolved = resolver.resolve_all(app_data["modules"])
 
@@ -203,7 +203,7 @@ def main():
     elif args.agent_manifest:
         write_out(generate_agent_manifest("web", args.app, app_data, resolved), args.out)
     else:
-        print("")
+        log("")
         print_stack(app_data["modules"], resolved)
         print_quick_actions(PROG, args.app, [
             ("pkg", "Generate package.json"),

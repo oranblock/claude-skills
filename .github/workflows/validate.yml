@@ -46,3 +46,34 @@ jobs:
           else
             python3 .github/version-bumped.py "${{ github.event.before }}"
           fi
+
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # These break on a *move* — the sys.path shim that lets each composer import
+      # composer_core is path-relative — and a move is exactly when nobody re-runs them
+      # by hand. Offline so it is deterministic and hits no registry.
+      - name: Byte-compile
+        run: python3 -m compileall -q tools/
+
+      - name: Each composer runs
+        run: |
+          cd tools/composer-maestro
+          for f in composer_ios.py composer_web.py composer_flutter.py composer_kmp.py; do
+            echo "::group::$f"
+            python3 "$f" --app standard --offline > /dev/null
+            python3 "$f" --app standard --offline --agent-manifest | python3 -m json.tool > /dev/null
+            echo "::endgroup::"
+          done
+          # The original predates composer_core and has no --offline flag; --help is the
+          # only invocation that is honest for it. A uniform loop would lie here.
+          python3 composer_ultimate_starting_mystro.py --help > /dev/null
+
+      - name: Composers survive a non-UTF-8 stdout
+        env:
+          PYTHONIOENCODING: ascii
+        run: |
+          cd tools/composer-maestro
+          python3 composer_kmp.py --app standard --offline > /dev/null
