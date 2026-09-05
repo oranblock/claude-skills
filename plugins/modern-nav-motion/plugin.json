@@ -1,11 +1,17 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "modern-nav-motion",
   "version": "1.1.2",
   "description": "Design and build floating navigation bars, animated tab bars and physics-driven micro-interactions across Jetpack Compose, React/Tailwind/Motion, SwiftUI and Flutter.",
-  "author": { "name": "oranblock" },
+  "author": {
+    "name": "oranblock"
+  },
   "homepage": "https://github.com/oranblock/claude-skills",
   "repository": "https://github.com/oranblock/claude-skills",
   "license": "MIT",
-  "keywords": ["ui", "animation", "navigation", "micro-interactions"]
+  "keywords": [
+    "ui",
+    "animation",
+    "navigation",
+    "micro-interactions"
+  ]
 }

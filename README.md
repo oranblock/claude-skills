@@ -35,7 +35,7 @@ drift — the validator rejects one if it reappears.
 
 ## Plugins
 
-### `modern-nav-motion` (v1.1.1)
+### `modern-nav-motion` (v1.1.2)
 
 Elite cross-platform navigation shells and micro-interactions — floating bars, pill/dock tab
 bars, liquid cutout indicators, morphing icons, spring physics — with one shared motion model so
@@ -52,9 +52,17 @@ Reference files, loaded on demand:
 | Tuning feel, porting between platforms | `references/motion-physics.md` |
 | Libraries, icon sets, inspiration | `references/resources.md` |
 
-The skill triggers on its own whenever a nav bar, tab bar, dock, segmented control, animated
+The skill triggers on its own whenever a nav bar, tab bar, dock, sidebar, segmented control, animated
 icon, glassmorphism/blur UI, spring animation or page transition comes up — you do not have to
 name it.
+
+## Antigravity / Gemini CLI Support
+
+This repository is ready out-of-the-box for **Google Antigravity (`agy`)** and **Gemini CLI**:
+
+- **Automatic Discovery**: `.agents/skills.json` and `.agents/plugins.json` configure declared workspace entries.
+- **Direct Skill Root**: `.agents/skills/modern-navigation-microinteractions` provides standard filesystem skill discovery.
+- **Dual Manifests**: `plugins/modern-nav-motion/` includes both `plugin.json` (for Antigravity) and `.claude-plugin/plugin.json` (for Claude Code).
 
 ## Validation
 
@@ -81,9 +89,15 @@ plugins and not installed by `/plugin`; see `tools/composer-maestro/README.md`.
 
 ```
 tools/composer-maestro/             # standalone CLIs, not part of the marketplace
-.claude-plugin/marketplace.json     # marketplace manifest
+.claude-plugin/marketplace.json     # marketplace manifest (Claude Code)
+.agents/                            # workspace customizations (Antigravity / Gemini CLI)
+  skills.json                       # declared skills config
+  plugins.json                      # declared plugins config
+  skills/                           # discovered skills directory
+AGENTS.md                           # AI pair programming guidelines & rules
 plugins/modern-nav-motion/
-  .claude-plugin/plugin.json        # plugin manifest
+  plugin.json                       # plugin manifest (Antigravity)
+  .claude-plugin/plugin.json        # plugin manifest (Claude Code)
   skills/modern-navigation-microinteractions/
     SKILL.md
     references/*.md

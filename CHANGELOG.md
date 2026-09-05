@@ -10,6 +10,17 @@
   than the prefix and could silently match nothing; base commits are now resolved explicitly and
   an unresolvable base skips loudly instead of passing green.
 
+## 1.1.2
+- Antigravity / Gemini CLI: added dual manifest support (`plugin.json`), declared workspace configs
+  (`.agents/skills.json`, `.agents/plugins.json`), `.agents/skills/` discovery symlink, and `AGENTS.md`.
+- `composer_core.py`: color gating now keys off `sys.stderr.isatty()` instead of `sys.stdout.isatty()`,
+  fixing ANSI escapes leaking into redirected log files and color disappearing from terminal stderr banners.
+- `composer_core.py`: `print_stack` and `print_quick_actions` now direct the default interactive stack
+  view to stderr via `log()`, preventing split reports where fallback warnings went to stderr but the
+  table was saved to stdout.
+- `composer_core.py`: relabeled curated fallback from `Curated Stable` to `Curated`, truthfully reflecting
+  packages pinned to prereleases in curated defaults (such as KMP `navigation-compose: 2.8.0-alpha11`).
+
 ## 1.1.1
 - `flutter.md`: `Colors.surface` → `Theme.of(context).colorScheme.surface`, with the
   `withValues` 3.27+ floor and the `withOpacity` fallback noted.

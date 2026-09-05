@@ -258,7 +258,7 @@ def resolve_artifact(coord):
     # 3. Fallback to curated stable default
     if not ver or ver == "UNKNOWN":
         ver = STABLE_DEFAULTS.get(coord, "1.0.0")
-        repo = "Curated Stable"
+        repo = "Curated"
 
     return {'coord': coord, 'group': group, 'artifact': artifact, 'version': ver, 'repo': repo}
 

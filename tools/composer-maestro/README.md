@@ -56,7 +56,7 @@ console.
 3. Skip prereleases (`alpha`/`beta`/`rc`/`dev`/`snapshot`) — matched only at a separator, so a
    version like `1.0.0-devon` is not mistaken for a dev build and silently dropped.
 4. On failure, fall back to a curated `STABLE_DEFAULTS` pin — and **label it** in the output as
-   `[Curated Stable]` with a count, rather than passing it off as resolved.
+   `[Curated]` with a count, rather than passing it off as resolved.
 
 That last point is the design rule: the tool always produces a complete, usable manifest, and
 never lies about where a number came from.

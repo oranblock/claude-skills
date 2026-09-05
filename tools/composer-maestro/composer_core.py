@@ -37,7 +37,7 @@ C = {
     'GRAY': '\033[90m', 'RESET': '\033[0m'
 }
 
-if not sys.stdout.isatty() or os.getenv("NO_COLOR"):
+if not sys.stderr.isatty() or os.getenv("NO_COLOR"):
     C = {k: '' for k in C}
 
 # Preset names carry emoji. Under a non-UTF-8 stdout — LANG unset in Docker, an ASCII
@@ -129,7 +129,7 @@ class Resolver:
             version = None
         if not version:
             version = self.stable_defaults.get(pkg)
-            repo = "Curated Stable"
+            repo = "Curated"
         if not version:
             version = "0.0.0"
             repo = "UNRESOLVED"
@@ -179,7 +179,7 @@ def print_header(title, app_data):
 
 
 def print_stack(catalog_modules, resolved):
-    fallbacks = sum(1 for r in resolved.values() if r['repo'] in ("Curated Stable", "UNRESOLVED"))
+    fallbacks = sum(1 for r in resolved.values() if r['repo'] in ("Curated", "Curated Stable", "UNRESOLVED"))
     if fallbacks:
         log(f"{C['B_YELLOW']}⚠  {fallbacks} package(s) fell back to curated versions "
             f"(registry unreachable or unknown package).{C['RESET']}\n")
@@ -189,22 +189,22 @@ def print_stack(catalog_modules, resolved):
     width = max((len(p) for p in resolved), default=30)
     width = min(max(width, 24), 52)
     for section, packages in catalog_modules.items():
-        print(f"{C['B_MAGENTA']}── {section} ──{C['RESET']}")
+        log(f"{C['B_MAGENTA']}── {section} ──{C['RESET']}")
         for pkg in packages:
             r = resolved[pkg]
-            print(f"   {C['WHITE']}{pkg:<{width}}{C['RESET']} "
-                  f"v{C['B_YELLOW']}{r['version']:<12}{C['RESET']} "
-                  f"[{C['GRAY']}{r['repo']}{C['RESET']}]")
-        print("")
+            log(f"   {C['WHITE']}{pkg:<{width}}{C['RESET']} "
+                f"v{C['B_YELLOW']}{r['version']:<12}{C['RESET']} "
+                f"[{C['GRAY']}{r['repo']}{C['RESET']}]")
+        log("")
 
 
 def print_quick_actions(prog, app, actions):
     if not actions:
         return
-    print(f"{C['B_CYAN']}💡 Quick Actions for this App:{C['RESET']}")
+    log(f"{C['B_CYAN']}💡 Quick Actions for this App:{C['RESET']}")
     pad = max(len(flag) for flag, _ in actions)
     for flag, label in actions:
-        print(f"  python3 {prog} --app {app} --{flag:<{pad}}   ({label})")
+        log(f"  python3 {prog} --app {app} --{flag:<{pad}}   ({label})")
 
 
 def generate_agent_manifest(platform, app_key, app_data, resolved):
