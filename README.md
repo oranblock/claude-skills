@@ -105,6 +105,11 @@ plugins/modern-nav-motion/
 .github/version-bumped.py           # release gate: content change requires a version bump
 ```
 
+## Contributors
+
+- **oranblock** ([@oranblock](https://github.com/oranblock)) — Project Author & Maintainer
+- **Antigravity** ([Google DeepMind](https://deepmind.google)) — AI Pair Programmer (cross-platform stream architecture, test harnesses, Antigravity & Gemini CLI native integration)
+
 ## License
 
 MIT — see `LICENSE`.
