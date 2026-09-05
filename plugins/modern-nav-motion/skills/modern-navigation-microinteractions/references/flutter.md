@@ -70,8 +70,12 @@ re-lays out every item each frame; the transform is paint-only.
 Never compute `index * itemWidth`. Read real geometry so mirroring and variable label widths
 work for free:
 
+These keys must live on the `State`, not in `build`. A fresh `GlobalKey` every frame detaches
+and re-attaches every item — losing their state and invalidating the measurement you just took.
+
 ```dart
-final keys = List.generate(items.length, (_) => GlobalKey());
+// Field on the State object, not a local in build():
+late final List<GlobalKey> _keys = List.generate(items.length, (_) => GlobalKey());
 
 Rect _rectOf(GlobalKey key, RenderBox bar) {
   final box = key.currentContext!.findRenderObject() as RenderBox;
@@ -81,9 +85,11 @@ Rect _rectOf(GlobalKey key, RenderBox bar) {
 ```
 
 Schedule the first measurement in `WidgetsBinding.instance.addPostFrameCallback` and re-measure
-on `LayoutBuilder` constraint changes and on locale change. `Directionality.of(context)` tells
-you the direction; because these are laid-out coordinates, you usually do not need to branch on
-it at all — which is the point.
+on `LayoutBuilder` constraint changes and on locale change. If `items` can change length,
+rebuild `_keys` in `didUpdateWidget` rather than making the list `late final`.
+
+`Directionality.of(context)` tells you the direction; because these are laid-out coordinates,
+you usually do not need to branch on it at all — which is the point.
 
 For directional icons, mirror explicitly:
 
@@ -137,8 +143,12 @@ frame of every screen.
 
 - Always wrap it in a `ClipRRect` — an unclipped backdrop filter samples the whole layer tree.
 - Make the radius a parameter and expose an off switch; fall back to
-  `Colors.surface.withValues(alpha: 0.92)` on low-tier devices.
+  `Theme.of(context).colorScheme.surface.withValues(alpha: 0.92)` on low-tier devices.
+  `withValues` needs Flutter 3.27+; below that use `.withOpacity(0.92)`.
 - Prefer one blur for the whole bar over one per item.
+- **Wrap the bar in a `RepaintBoundary`.** It paints above every screen, so without one, the
+  scrolling content underneath repaints the bar on every frame and the bar's own indicator
+  animation dirties the content layer. This is the cheapest win available here — one widget.
 - Use `Material(elevation:)` or a single soft `BoxShadow`; animating `blurRadius` on a shadow
   re-rasterizes it every frame. Animate `scale` or the shadow's colour alpha instead.
 
@@ -189,8 +199,8 @@ confirmation of a state change.
 ## 9. Pitfalls specific to Flutter
 
 - `AnimationController` without `dispose()` leaks a ticker and eventually throws.
-- `SingleTickerProviderStateMixin` with two controllers silently misbehaves — use
-  `TickerProviderStateMixin`.
+- `SingleTickerProviderStateMixin` with two controllers throws an assertion in debug
+  (`_ticker == null`) — use `TickerProviderStateMixin` when you need more than one.
 - `AnimatedContainer` restarts on interruption; it is a tween, not a spring. Fine for colour,
   wrong for the indicator.
 - `IndexedStack` keeps every tab alive; that is usually what you want for state preservation but

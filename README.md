@@ -10,22 +10,31 @@ install the plugin, and Claude Code keeps it up to date from this repo.
 /plugin install modern-nav-motion@oranblock-skills
 ```
 
-Then restart Claude Code (or run `/plugin`) and the skill is live in every project.
+The skill is then live in every project. If the install summary asks you to reload, run
+`/reload-plugins`.
 
 ## Staying on the latest version
 
-Claude Code refreshes marketplaces it has added from git, so a push here reaches installs
-without any manual step. To force it immediately:
+`plugins/modern-nav-motion/.claude-plugin/plugin.json` pins a `version`, and **Claude Code gates
+updates on that field** — a push whose version is unchanged never reaches anyone who already
+installed. So every release bumps it, and CI fails a PR that edits plugin content without a bump
+(`.github/version-bumped.py`).
+
+To pull the newest version:
 
 ```
 /plugin marketplace update oranblock-skills
 ```
 
-`/plugin` → *Manage marketplaces* shows the currently installed version against this repo's.
+`/plugin` → *Manage marketplaces* shows your installed version against this repo's.
+
+Versions are declared in `plugin.json` only. The marketplace entry deliberately has no
+`version`: Claude Code always reads `plugin.json`'s value, so a second copy here could only
+drift — the validator rejects one if it reappears.
 
 ## Plugins
 
-### `modern-nav-motion` (v1.1.0)
+### `modern-nav-motion` (v1.1.1)
 
 Elite cross-platform navigation shells and micro-interactions — floating bars, pill/dock tab
 bars, liquid cutout indicators, morphing icons, spring physics — with one shared motion model so
@@ -46,6 +55,15 @@ The skill triggers on its own whenever a nav bar, tab bar, dock, segmented contr
 icon, glassmorphism/blur UI, spring animation or page transition comes up — you do not have to
 name it.
 
+## Validation
+
+```
+claude plugin validate .        # official: manifest schema, naming, path safety
+python3 .github/validate.py     # repo rules: skill frontmatter, dangling refs, version placement
+```
+
+Both run in CI on every push.
+
 ## Layout
 
 ```
@@ -55,6 +73,8 @@ plugins/modern-nav-motion/
   skills/modern-navigation-microinteractions/
     SKILL.md
     references/*.md
+.github/validate.py                 # repo-specific checks
+.github/version-bumped.py           # release gate: content change requires a version bump
 ```
 
 ## License

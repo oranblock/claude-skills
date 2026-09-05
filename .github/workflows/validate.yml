@@ -9,5 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate manifests and skill layout
+        with:
+          fetch-depth: 0
+
+      - name: Official plugin/marketplace validation
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+
+      - name: Repo-specific checks
         run: python3 .github/validate.py
+
+      - name: Version bumped when plugin content changed
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin ${{ github.base_ref }}
+          python3 .github/version-bumped.py origin/${{ github.base_ref }}
