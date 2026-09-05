@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (tooling only — no plugin content change, so no version bump)
+- CI: the version gate now runs on pushes too, not only pull requests. On a solo repo that lands
+  commits on `main`, the PR-only form could never fire.
+- CI: added a per-plugin `claude plugin validate <source>` run, which is what actually parses
+  `SKILL.md` frontmatter; the root run only reaches the manifests.
+- CI: pinned the Claude Code version instead of installing latest.
+- `version-bumped.py`: `lstrip("./")` → `removeprefix("./")`, which stripped characters rather
+  than the prefix and could silently match nothing; base commits are now resolved explicitly and
+  an unresolvable base skips loudly instead of passing green.
+
 ## 1.1.1
 - `flutter.md`: `Colors.surface` → `Theme.of(context).colorScheme.surface`, with the
   `withValues` 3.27+ floor and the `withOpacity` fallback noted.

@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+env:
+  # Pinned: validation rules change between releases, so an upstream publish must not
+  # turn CI red on an untouched repo. Bump this deliberately, in its own commit.
+  CLAUDE_CODE_VERSION: 2.1.261
+
 jobs:
   manifests:
     runs-on: ubuntu-latest
@@ -12,16 +17,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Official plugin/marketplace validation
+      - name: Install Claude Code
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Validate marketplace
+        run: claude plugin validate .
+
+      - name: Validate each plugin (parses skill/agent/command files)
         run: |
-          npm install -g @anthropic-ai/claude-code
-          claude plugin validate .
+          python3 -c "
+          import json
+          m = json.load(open('.claude-plugin/marketplace.json'))
+          print('\n'.join(e['source'] for e in m['plugins'] if e['source'].startswith('.')))
+          " | while read -r src; do
+            echo "::group::claude plugin validate $src"
+            claude plugin validate "$src"
+            echo "::endgroup::"
+          done
 
       - name: Repo-specific checks
         run: python3 .github/validate.py
 
       - name: Version bumped when plugin content changed
-        if: github.event_name == 'pull_request'
         run: |
-          git fetch --no-tags origin ${{ github.base_ref }}
-          python3 .github/version-bumped.py origin/${{ github.base_ref }}
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.base_ref }}"
+            python3 .github/version-bumped.py "origin/${{ github.base_ref }}"
+          else
+            python3 .github/version-bumped.py "${{ github.event.before }}"
+          fi

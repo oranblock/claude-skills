@@ -17,8 +17,9 @@ The skill is then live in every project. If the install summary asks you to relo
 
 `plugins/modern-nav-motion/.claude-plugin/plugin.json` pins a `version`, and **Claude Code gates
 updates on that field** — a push whose version is unchanged never reaches anyone who already
-installed. So every release bumps it, and CI fails a PR that edits plugin content without a bump
-(`.github/version-bumped.py`).
+installed. So every release bumps it, and CI fails **any push or PR** that edits plugin content
+without a bump (`.github/version-bumped.py`). The push path is what actually fires on this repo,
+since commits land on `main` directly.
 
 To pull the newest version:
 
@@ -58,11 +59,16 @@ name it.
 ## Validation
 
 ```
-claude plugin validate .        # official: manifest schema, naming, path safety
-python3 .github/validate.py     # repo rules: skill frontmatter, dangling refs, version placement
+claude plugin validate .                      # marketplace schema, naming, source path safety
+claude plugin validate plugins/modern-nav-motion   # parses the skill/agent/command files
+python3 .github/validate.py                   # repo rules: dir/name agreement, dangling refs
+python3 .github/version-bumped.py             # release gate
 ```
 
-Both run in CI on every push.
+All four run in CI on every push. Both `claude plugin validate` runs are needed — from the
+marketplace root it only reaches the manifests, so the per-plugin run is what actually parses
+`SKILL.md` frontmatter. CI pins the Claude Code version (`CLAUDE_CODE_VERSION` in the workflow)
+so an upstream release cannot redden an untouched repo; bump it deliberately.
 
 ## Layout
 
