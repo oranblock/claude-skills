@@ -1,0 +1,19 @@
+{
+  "name": "oranblock-skills",
+  "owner": { "name": "oranblock" },
+  "metadata": {
+    "description": "Cross-platform UI/UX engineering skills for Claude Code.",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "modern-nav-motion",
+      "source": "./plugins/modern-nav-motion",
+      "description": "Floating nav bars, pill/dock tab bars, liquid cutout indicators, morphing icons and spring micro-interactions for Compose, React/Motion, SwiftUI and Flutter.",
+      "version": "1.1.0",
+      "author": { "name": "oranblock" },
+      "keywords": ["ui", "animation", "navigation", "compose", "swiftui", "react", "flutter", "motion"],
+      "category": "design"
+    }
+  ]
+}
